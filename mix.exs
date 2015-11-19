@@ -11,8 +11,8 @@ defmodule UeberauthGithub.Mixfile do
      elixir: "~> 1.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     source_url: "https://github.com/hassox/ueberauth_github",
-     homepage_url: "https://github.com/hassox/ueberauth_github",
+     source_url: "https://github.com/ueberauth/ueberauth_github",
+     homepage_url: "https://github.com/ueberauth/ueberauth_github",
      description: description,
      deps: deps,
      docs: docs]
