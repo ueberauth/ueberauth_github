@@ -19,7 +19,7 @@ defmodule UeberauthGithub.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :ueberauth, :oauth2]]
   end
 
   defp deps do
