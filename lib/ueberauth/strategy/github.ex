@@ -215,7 +215,7 @@ defmodule Ueberauth.Strategy.Github do
   end
 
   def option(conn, key) do
-    defaults = Keyword.get(default_options(), key)
+    defaults = Application.get_env(:ueberauth_github, :oauth2_module, Keyword.get(default_options(), key))
 
     conn
     |> options

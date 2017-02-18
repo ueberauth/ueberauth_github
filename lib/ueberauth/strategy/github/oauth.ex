@@ -17,6 +17,8 @@ defmodule Ueberauth.Strategy.Github.OAuth do
     token_url: "https://github.com/login/oauth/access_token",
   ]
 
+  @client Application.get_env(:ueberauth_github, :oauth2_client, OAuth2.Client)
+
   @doc """
   Construct a client for requests to Github.
 
@@ -34,7 +36,7 @@ defmodule Ueberauth.Strategy.Github.OAuth do
       |> Keyword.merge(config)
       |> Keyword.merge(opts)
 
-    OAuth2.Client.new(client_opts)
+    @client.new(client_opts)
   end
 
   @doc """
@@ -43,22 +45,21 @@ defmodule Ueberauth.Strategy.Github.OAuth do
   def authorize_url!(params \\ [], opts \\ []) do
     opts
     |> client
-    |> OAuth2.Client.authorize_url!(params)
+    |> @client.authorize_url!(params)
   end
 
   def get(token, url, headers \\ [], opts \\ []) do
     [token: token]
     |> client
     |> put_param("client_secret", client().client_secret)
-    |> OAuth2.Client.get(url, headers, opts)
+    |> @client.get(url, headers, opts)
   end
 
   def get_token!(params \\ [], options \\ []) do
     headers        = Keyword.get(options, :headers, [])
     options        = Keyword.get(options, :options, [])
     client_options = Keyword.get(options, :client_options, [])
-    client         = OAuth2.Client.get_token!(client(client_options), params, headers, options)
-    client.token
+    @client.get_token!(client(client_options), params, headers, options).token
   end
 
   # Strategy Callbacks
