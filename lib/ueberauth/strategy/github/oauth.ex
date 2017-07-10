@@ -28,7 +28,7 @@ defmodule Ueberauth.Strategy.Github.OAuth do
   These options are only useful for usage outside the normal callback phase of Ueberauth.
   """
   def client(opts \\ []) do
-    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Github.OAuth)
+    config = Application.fetch_env!(:ueberauth, Ueberauth.Strategy.Github.OAuth)
     client_opts =
       @defaults
       |> Keyword.merge(config)
