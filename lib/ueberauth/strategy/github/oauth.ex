@@ -28,7 +28,8 @@ defmodule Ueberauth.Strategy.Github.OAuth do
   These options are only useful for usage outside the normal callback phase of Ueberauth.
   """
   def client(opts \\ []) do
-    config = :ueberauth
+    config =
+    :ueberauth
     |> Application.fetch_env!(Ueberauth.Strategy.Github.OAuth)
     |> check_config_key_exists(:client_id)
     |> check_config_key_exists(:client_secret)
