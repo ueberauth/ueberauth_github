@@ -129,11 +129,13 @@ defmodule Ueberauth.Strategy.Github do
   Fetches the uid field from the Github response. This defaults to the option `uid_field` which in-turn defaults to `id`
   """
   def uid(conn) do
-    user =
-      conn
-      |> option(:uid_field)
-      |> to_string
-    conn.private.github_user[user]
+    uid_field = conn |> option(:uid_field) |> to_string()
+    if (uid_field == "email") do
+      # private email will not be available as :email and must be fetched
+      conn.private.github_user["email"] || Enum.find(conn.private.github_user["emails"] || [], &(&1["primary"]))["email"]
+    else
+      conn.private.github_user[uid_field]
+    end
   end
 
   @doc """
