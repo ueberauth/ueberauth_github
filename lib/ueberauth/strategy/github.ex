@@ -129,13 +129,7 @@ defmodule Ueberauth.Strategy.Github do
   Fetches the uid field from the Github response. This defaults to the option `uid_field` which in-turn defaults to `id`
   """
   def uid(conn) do
-    uid_field = conn |> option(:uid_field) |> to_string()
-    if (uid_field == "email") do
-      # private email will not be available as :email and must be fetched
-      conn.private.github_user["email"] || Enum.find(conn.private.github_user["emails"] || [], &(&1["primary"]))["email"]
-    else
-      conn.private.github_user[uid_field]
-    end
+    conn |> option(:uid_field) |> to_string() |> fetch_uid(conn)
   end
 
   @doc """
@@ -165,7 +159,7 @@ defmodule Ueberauth.Strategy.Github do
     %Info{
       name: user["name"],
       nickname: user["login"],
-      email: user["email"] || Enum.find(user["emails"] || [], &(&1["primary"]))["email"],
+      email: user["email"] || get_primary_email!(user),
       location: user["location"],
       urls: %{
         followers_url: user["followers_url"],
@@ -195,6 +189,23 @@ defmodule Ueberauth.Strategy.Github do
         user: conn.private.github_user
       }
     }
+  end
+
+  defp fetch_uid("email",  %{private: %{github_user: user}}) do
+    # private email will not be available as :email and must be fetched
+    user["email"] || get_primary_email!(user)
+  end
+
+  defp fetch_uid(field, conn) do
+    conn.private.github_user[field]
+  end
+
+  defp get_primary_email!(user) do
+    unless user["emails"] && (Enum.count(user["emails"]) > 0) do
+      raise "Unable to access the user's email address"
+    end
+
+    Enum.find(user["emails"], &(&1["primary"]))["email"]
   end
 
   defp fetch_user(conn, token) do
