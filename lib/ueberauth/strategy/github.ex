@@ -159,7 +159,7 @@ defmodule Ueberauth.Strategy.Github do
     %Info{
       name: user["name"],
       nickname: user["login"],
-      email: user["email"] || get_primary_email!(user),
+      email: fetch_email!(user),
       location: user["location"],
       urls: %{
         followers_url: user["followers_url"],
@@ -191,13 +191,17 @@ defmodule Ueberauth.Strategy.Github do
     }
   end
 
-  defp fetch_uid("email",  %{private: %{github_user: user}}) do
+  defp fetch_uid("email", %{private: %{github_user: user}}) do
     # private email will not be available as :email and must be fetched
-    user["email"] || get_primary_email!(user)
+    fetch_email!(user)
   end
 
   defp fetch_uid(field, conn) do
     conn.private.github_user[field]
+  end
+
+  defp fetch_email!(user) do
+    user["email"] || get_primary_email!(user)
   end
 
   defp get_primary_email!(user) do
