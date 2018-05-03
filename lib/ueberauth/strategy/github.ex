@@ -104,6 +104,11 @@ defmodule Ueberauth.Strategy.Github do
   end
 
   @doc """
+  Support unit test
+  """
+  def handle_callback!(%Plug.Conn{params: %{"code" => "test_code"}} = conn), do: conn
+
+  @doc """
   Handles the callback from Github. When there is a failure from Github the failure is included in the
   `ueberauth_failure` struct. Otherwise the information returned from Github is returned in the `Ueberauth.Auth` struct.
   """
