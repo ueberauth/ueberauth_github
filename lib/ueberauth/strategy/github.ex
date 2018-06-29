@@ -162,12 +162,13 @@ defmodule Ueberauth.Strategy.Github do
   """
   def info(conn) do
     user = conn.private.github_user
+    allow_private_emails = Keyword.get(options(conn), :allow_private_emails, false)
 
     %Info{
       name: user["name"],
       description: user["bio"],
       nickname: user["login"],
-      email: fetch_email!(user),
+      email: fetch_email!(user, allow_private_emails),
       location: user["location"],
       image: user["avatar_url"],
       urls: %{
@@ -200,25 +201,33 @@ defmodule Ueberauth.Strategy.Github do
     }
   end
 
-  defp fetch_uid("email", %{private: %{github_user: user}}) do
+  defp fetch_uid("email", conn) do
     # private email will not be available as :email and must be fetched
-    fetch_email!(user)
+    allow_private_emails = Keyword.get(options(conn), :allow_private_emails, false)
+    fetch_email!(conn.private.github_user.user, allow_private_emails)
   end
 
   defp fetch_uid(field, conn) do
     conn.private.github_user[field]
   end
 
-  defp fetch_email!(user) do
-    user["email"] || get_primary_email!(user)
+  defp fetch_email!(user, allow_private_emails) do
+    user["email"] ||
+    get_primary_email!(user) ||
+    get_private_email!(user, allow_private_emails) ||
+    raise "Unable to access the user's email address"
   end
 
   defp get_primary_email!(user) do
-    unless user["emails"] && (Enum.count(user["emails"]) > 0) do
-      raise "Unable to access the user's email address"
+    if user["emails"] && (Enum.count(user["emails"]) > 0) do
+      Enum.find(user["emails"], &(&1["primary"]))["email"]
     end
+  end
 
-    Enum.find(user["emails"], &(&1["primary"]))["email"]
+  defp get_private_email!(user, allow_private_emails) do
+    if allow_private_emails do
+      "#{user["id"]}+#{user["login"]}@users.noreply.github.com"
+    end
   end
 
   defp fetch_user(conn, token) do
@@ -228,13 +237,9 @@ defmodule Ueberauth.Strategy.Github do
       {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
       {:ok, %OAuth2.Response{status_code: status_code, body: user}} when status_code in 200..399 ->
-        case Ueberauth.Strategy.Github.OAuth.get(token, "/user/emails") do
-          {:ok, %OAuth2.Response{status_code: status_code, body: emails}} when status_code in 200..399 ->
-            user = Map.put user, "emails", emails
-            put_private(conn, :github_user, user)
-          {:error, _} -> # Continue on as before
-            put_private(conn, :github_user, user)
-        end
+        conn
+        |> fetch_and_put_private("emails", token, user)
+        |> fetch_and_put_private("orgs", token, user)
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
@@ -242,5 +247,15 @@ defmodule Ueberauth.Strategy.Github do
 
   defp option(conn, key) do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
+  end
+
+  defp fetch_and_put_private(conn, type, token, user) do
+    case Ueberauth.Strategy.Github.OAuth.get(token, "/user/#{type}") do
+      {:ok, %OAuth2.Response{status_code: status_code, body: body}} when status_code in 200..399 ->
+        user = Map.put(user, type, body)
+        put_private(conn, :github_user, user)
+      {:error, _} -> # Continue on as before
+        put_private(conn, :github_user, user)
+    end
   end
 end
