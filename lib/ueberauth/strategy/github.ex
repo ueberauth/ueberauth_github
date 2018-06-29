@@ -237,13 +237,9 @@ defmodule Ueberauth.Strategy.Github do
       {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
       {:ok, %OAuth2.Response{status_code: status_code, body: user}} when status_code in 200..399 ->
-        case Ueberauth.Strategy.Github.OAuth.get(token, "/user/emails") do
-          {:ok, %OAuth2.Response{status_code: status_code, body: emails}} when status_code in 200..399 ->
-            user = Map.put user, "emails", emails
-            put_private(conn, :github_user, user)
-          {:error, _} -> # Continue on as before
-            put_private(conn, :github_user, user)
-        end
+        conn
+        |> fetch_and_put_private("emails", token, user)
+        |> fetch_and_put_private("orgs", token, user)
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
@@ -251,5 +247,15 @@ defmodule Ueberauth.Strategy.Github do
 
   defp option(conn, key) do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
+  end
+
+  defp fetch_and_put_private(conn, type, token, user) do
+    case Ueberauth.Strategy.Github.OAuth.get(token, "/user/#{type}") do
+      {:ok, %OAuth2.Response{status_code: status_code, body: body}} when status_code in 200..399 ->
+        user = Map.put(user, type, body)
+        put_private(conn, :github_user, user)
+      {:error, _} -> # Continue on as before
+        put_private(conn, :github_user, user)
+    end
   end
 end
