@@ -167,7 +167,7 @@ defmodule Ueberauth.Strategy.Github do
       name: user["name"],
       description: user["bio"],
       nickname: user["login"],
-      email: fetch_email!(user),
+      email: user["email"],
       location: user["location"],
       image: user["avatar_url"],
       urls: %{
@@ -231,6 +231,10 @@ defmodule Ueberauth.Strategy.Github do
         case Ueberauth.Strategy.Github.OAuth.get(token, "/user/emails") do
           {:ok, %OAuth2.Response{status_code: status_code, body: emails}} when status_code in 200..399 ->
             user = Map.put user, "emails", emails
+            
+            primary_email = Enum.find(emails, &(&1["primary"]))["email"] 
+            user = Map.put user, "email", primary_email
+
             put_private(conn, :github_user, user)
           {:error, _} -> # Continue on as before
             put_private(conn, :github_user, user)
