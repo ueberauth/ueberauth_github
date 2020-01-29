@@ -105,6 +105,23 @@ defmodule Ueberauth.Strategy.Github do
 
   @doc """
   Support unit test
+
+  Authorization can be mock in unit test.
+  Example:
+
+  describe "new github authentication" do
+    test "create new user", %{conn: conn} do
+      assert Accounts.find_authentication(@github_params.uid) == nil
+
+      conn =
+        conn
+        |> assign(:ueberauth_auth, @github_params)
+        |> get(auth_path(conn, :callback, :github), %{"code" => "test_code"})
+
+      assert html_response(conn, 302)
+      assert Accounts.find_authentication(@github_params.uid) != nil
+    end
+  end
   """
   def handle_callback!(%Plug.Conn{params: %{"code" => "test_code"}} = conn), do: conn
 
