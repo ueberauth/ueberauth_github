@@ -104,7 +104,7 @@ defmodule Ueberauth.Strategy.Github do
   end
 
   @doc """
-  Support unit test
+  Enable callback with code=test_code for unit test support only.
 
   Authorization can be mock in unit test.
   Example:
@@ -123,7 +123,16 @@ defmodule Ueberauth.Strategy.Github do
     end
   end
   """
-  def handle_callback!(%Plug.Conn{params: %{"code" => "test_code"}} = conn), do: conn
+  def handle_callback!(%Plug.Conn{params: %{"code" => "test_code"}} = conn) do
+    case Mix.env() do
+      :test ->
+        conn
+      _ ->
+        conn
+        |> Map.put(:assigns, Map.delete(conn.assigns, :ueberauth_auth))
+        |> set_errors!([error("invalid_code", "test_code is for test only.")])
+    end
+  end
 
   @doc """
   Handles the callback from Github. When there is a failure from Github the failure is included in the
