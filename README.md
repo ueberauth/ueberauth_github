@@ -53,7 +53,6 @@
     defmodule MyApp.Router do
       use MyApp.Web, :router
 
-      require Ueberauth
 
       pipeline :browser do
         plug Ueberauth
