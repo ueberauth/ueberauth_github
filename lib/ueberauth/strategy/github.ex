@@ -175,7 +175,7 @@ defmodule Ueberauth.Strategy.Github do
       name: user["name"],
       description: user["bio"],
       nickname: user["login"],
-      email: fetch_email!(user, allow_private_emails),
+      email: maybe_fetch_email(user, allow_private_emails),
       location: user["location"],
       image: user["avatar_url"],
       urls: %{
@@ -217,6 +217,12 @@ defmodule Ueberauth.Strategy.Github do
 
   defp fetch_uid(field, conn) do
     conn.private.github_user[field]
+  end
+
+  defp maybe_fetch_email(user, allow_private_emails) do
+    user["email"] ||
+      get_primary_email!(user) ||
+      get_private_email!(user, allow_private_emails)
   end
 
   defp fetch_email!(user, allow_private_emails) do
